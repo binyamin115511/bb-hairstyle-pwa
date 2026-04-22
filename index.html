@@ -709,7 +709,17 @@
           )}
 
           <button onClick={()=>setAdminOpen(true)}
-            style={{position:"fixed",bottom:90,left:16,width:46,height:46,borderRadius:14,background:"linear-gradient(135deg,#1a3a8f,#1e4fc2)",color:"#fff",border:"none",fontSize:20,cursor:"pointer",boxShadow:"0 4px 14px rgba(26,58,143,.4)",zIndex:24,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            style={{
+              position:"fixed",
+              bottom:"calc(90px + env(safe-area-inset-bottom))",
+              left:"calc(16px + env(safe-area-inset-left))",
+              width:46,height:46,borderRadius:14,
+              background:"linear-gradient(135deg,#1a3a8f,#1e4fc2)",
+              color:"#fff",border:"none",fontSize:20,cursor:"pointer",
+              boxShadow:"0 4px 14px rgba(26,58,143,.4)",
+              zIndex:60,
+              display:"flex",alignItems:"center",justifyContent:"center"
+            }}>
             🔐
           </button>
         </div>
