@@ -96,7 +96,7 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <script type="text/babel">
-    const { useState, useMemo } = React;
+    const { useState, useMemo, useRef } = React;
 
     const SERVICES = [
       { id:1, name:"תספורת",       sub:"haircut",      duration:20, price:70,
@@ -176,15 +176,39 @@
       const [toast,   setToast]   = useState(null);
 
       const ADMIN_PASS = "bb2024";
+      const [adminEnabled, setAdminEnabled] = useState(()=>loadData("bb_admin_enabled", false));
       const [adminOpen,setAdminOpen] = useState(false);
       const [adminPass,setAdminPass] = useState("");
       const [adminAuth,setAdminAuth] = useState(false);
       const [adminErr, setAdminErr]  = useState("");
+      const secretTapTimes = useRef([]);
 
       const weekDays   = useMemo(()=>getWeekDays(weekBase),[weekBase]);
       const monthLabel = HE_MONTHS[weekDays[0].getMonth()];
 
       function showToast(msg){ setToast(msg); setTimeout(()=>setToast(null),2800); }
+      function enableAdminButton(){
+        setAdminEnabled(true);
+        saveData("bb_admin_enabled", true);
+      }
+      function disableAdminButton(){
+        setAdminEnabled(false);
+        saveData("bb_admin_enabled", false);
+      }
+      function handleSecretAdminTap(){
+        const now = Date.now();
+        secretTapTimes.current = [...secretTapTimes.current, now].filter(t => now - t < 2500);
+        if(secretTapTimes.current.length >= 7){
+          secretTapTimes.current = [];
+          const p = window.prompt("כדי להציג את כפתור הניהול, הכנס סיסמת מנהל:");
+          if(p === ADMIN_PASS){
+            enableAdminButton();
+            showToast("כפתור ניהול הופעל במכשיר הזה ✅");
+          } else if(p != null) {
+            showToast("סיסמה שגויה ❌");
+          }
+        }
+      }
 
       function updateAppts(newVal){ setAppts(newVal); saveData("bb_appts", newVal); }
       function updateCustomers(newVal){ setCustomers(newVal); saveData("bb_customers", newVal); }
@@ -349,7 +373,7 @@
           <style>{css}</style>
           <div className="topbar">
             <div style={{display:"flex",alignItems:"center",gap:10}}>
-              <div className="logo">💈</div>
+              <div className="logo" onClick={handleSecretAdminTap} style={{cursor:"pointer",userSelect:"none"}}>💈</div>
               <div>
                 <div style={{fontSize:15,fontWeight:800,color:"#fff"}}>B.B HairStyle</div>
                 <div style={{fontSize:11,color:"rgba(255,255,255,.65)"}}>שלום, {user.name.split(" ")[0]} 👋</div>
@@ -644,7 +668,16 @@
               onClick={e=>{if(e.target===e.currentTarget){setAdminOpen(false);setAdminAuth(false);setAdminPass("");setAdminErr("");}}}>
               <div style={{background:"#fff",borderRadius:"24px 24px 0 0",padding:"24px 20px",width:"100%",maxWidth:430,margin:"0 auto",maxHeight:"85vh",overflowY:"auto",direction:"rtl"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
-                  <div style={{fontSize:18,fontWeight:900,color:"#0d1b4b"}}>🔐 פאנל ניהול</div>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{fontSize:18,fontWeight:900,color:"#0d1b4b"}}>🔐 פאנל ניהול</div>
+                    <button
+                      onClick={()=>{disableAdminButton();setAdminOpen(false);setAdminAuth(false);setAdminPass("");setAdminErr("");}}
+                      style={{background:"#f7f9ff",border:"2px solid #dde6ff",borderRadius:10,padding:"6px 10px",cursor:"pointer",fontFamily:"'Heebo',sans-serif",fontSize:12,fontWeight:800,color:"#1e4fc2"}}
+                      title="הסתר כפתור ניהול במכשיר הזה"
+                    >
+                      הסתר כפתור
+                    </button>
+                  </div>
                   <button onClick={()=>{setAdminOpen(false);setAdminAuth(false);setAdminPass("");setAdminErr("");}} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#9aacce"}}>✕</button>
                 </div>
                 {!adminAuth ? (
@@ -708,20 +741,22 @@
             </div>
           )}
 
-          <button onClick={()=>setAdminOpen(true)}
-            style={{
-              position:"fixed",
-              bottom:"calc(90px + env(safe-area-inset-bottom))",
-              left:"calc(16px + env(safe-area-inset-left))",
-              width:46,height:46,borderRadius:14,
-              background:"linear-gradient(135deg,#1a3a8f,#1e4fc2)",
-              color:"#fff",border:"none",fontSize:20,cursor:"pointer",
-              boxShadow:"0 4px 14px rgba(26,58,143,.4)",
-              zIndex:60,
-              display:"flex",alignItems:"center",justifyContent:"center"
-            }}>
-            🔐
-          </button>
+          {adminEnabled && (
+            <button onClick={()=>setAdminOpen(true)}
+              style={{
+                position:"fixed",
+                bottom:"calc(90px + env(safe-area-inset-bottom))",
+                left:"calc(16px + env(safe-area-inset-left))",
+                width:46,height:46,borderRadius:14,
+                background:"linear-gradient(135deg,#1a3a8f,#1e4fc2)",
+                color:"#fff",border:"none",fontSize:20,cursor:"pointer",
+                boxShadow:"0 4px 14px rgba(26,58,143,.4)",
+                zIndex:60,
+                display:"flex",alignItems:"center",justifyContent:"center"
+              }}>
+              🔐
+            </button>
+          )}
         </div>
       );
     }
