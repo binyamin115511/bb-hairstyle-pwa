@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
+  <meta name="theme-color" content="#1e4fc2"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="B.B HairStyle"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="format-detection" content="telephone=no"/>
+  <meta name="description" content="קביעת תורים - B.B HairStyle ספר בית מקצועי"/>
+
+  <title>B.B HairStyle</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="./manifest.json"/>
+
+  <!-- Apple Touch Icon (iOS home screen) -->
+  <link rel="apple-touch-icon" sizes="180x180" href="./icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png"/>
+  <link rel="icon" type="image/svg+xml" href="./icon.svg"/>
+
+  <!-- Apple splash screens hint -->
+  <meta name="apple-touch-fullscreen" content="yes"/>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: #1e4fc2; }
+    body { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    #root { height: 100%; }
+
+    /* iOS safe area support */
+    .app { padding-bottom: env(safe-area-inset-bottom); }
+    .bottom-nav { padding-bottom: calc(14px + env(safe-area-inset-bottom)) !important; }
+
+    /* Install banner */
+    #install-banner {
+      display: none;
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e4fc2;
+      color: #fff;
+      border-radius: 16px;
+      padding: 14px 20px;
+      font-family: 'Heebo', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      z-index: 9999;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      max-width: 320px;
+      width: calc(100% - 32px);
+      direction: rtl;
+    }
+    #install-banner button {
+      background: #f5c842;
+      color: #0d1b4b;
+      border: none;
+      border-radius: 10px;
+      padding: 8px 18px;
+      font-family: 'Heebo', sans-serif;
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      margin-top: 10px;
+      margin-left: 8px;
+    }
+    #install-banner .close-btn {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- Install banner -->
+  <div id="install-banner">
+    📲 התקן את האפליקציה על הטלפון!
+    <br/>
+    <button id="install-btn">התקן עכשיו</button>
+    <button class="close-btn" onclick="document.getElementById('install-banner').style.display='none'">✕</button>
+  </div>
+
+  <!-- React & Babel (CDN — no build needed) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useMemo } = React;
+
+    const SERVICES = [
+      { id:1, name:"תספורת",       sub:"haircut",      duration:20, price:70,
+        img:"https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=120&h=120&fit=crop&crop=top&q=80" },
+      { id:2, name:"תספורת + זקן", sub:"haircut+beard",duration:20, price:80,
+        img:"https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=120&h=120&fit=crop&crop=top&q=80" },
+      { id:3, name:"עיצוב זקן",    sub:"beard trim",   duration:20, price:50,
+        img:"https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=120&h=120&fit=crop&crop=top&q=80" },
+      { id:4, name:"צבע לשיער",    sub:"hair color",   duration:20, price:250,
+        img:"https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=120&h=120&fit=crop&crop=top&q=80" },
+      { id:5, name:"צבע למסגרת",   sub:"שחור",         duration:17, price:10,
+        img:"https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=120&h=120&fit=crop&crop=top&q=80" },
+      { id:6, name:"תספורת ילדים", sub:"kids haircut", duration:20, price:45,
+        img:"https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=120&h=120&fit=crop&crop=top&q=80" },
+    ];
+
+    const GALLERY = [
+      { id:1, label:"פייד קלאסי",   img:"https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=300&h=300&fit=crop&crop=top&q=80" },
+      { id:2, label:"טקסצ'ור קרופ", img:"https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=300&h=300&fit=crop&crop=top&q=80" },
+      { id:3, label:"זקן מעוצב",    img:"https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=300&h=300&fit=crop&crop=top&q=80" },
+      { id:4, label:"אנדרקאט",      img:"https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=300&h=300&fit=crop&crop=top&q=80" },
+      { id:5, label:"פומפדור",      img:"https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=300&h=300&fit=crop&crop=top&q=80" },
+      { id:6, label:"קצר מודרני",   img:"https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=300&h=300&fit=crop&crop=top&q=80" },
+    ];
+
+    const BARBERS = [
+      { id:1, name:"נועם", emoji:"✂️" },
+      { id:2, name:"אדם",  emoji:"💈" },
+      { id:3, name:"יוסי", emoji:"🪒" },
+    ];
+
+    const ALL_SLOTS = [
+      "09:00","09:30","10:00","10:30","11:00","11:30",
+      "12:00","12:30","13:00","14:00","14:30","15:00",
+      "15:30","16:00","16:30","17:00","17:30","18:00",
+    ];
+
+    const BOOKED_MAP = {};
+    const HE_DAYS   = ["א׳","ב׳","ג׳","ד׳","ה׳","ו׳","ש׳"];
+    const HE_MONTHS = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+
+    function toDateStr(d){ return d.toISOString().split("T")[0]; }
+    function getWeekDays(base){
+      const d=new Date(base), sun=new Date(d);
+      sun.setDate(d.getDate()-d.getDay());
+      return Array.from({length:7},(_,i)=>{ const dd=new Date(sun); dd.setDate(sun.getDate()+i); return dd; });
+    }
+    function fmtDate(ds){
+      if(!ds) return "";
+      return new Date(ds).toLocaleDateString("he-IL",{weekday:"long",day:"numeric",month:"long"});
+    }
+
+    // ── Load/save data from localStorage for persistence ──
+    function loadData(key, def) {
+      try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e){ return def; }
+    }
+    function saveData(key, val) {
+      try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){}
+    }
+
+    function App(){
+      const today    = useMemo(()=>new Date(),[]);
+      const todayStr = useMemo(()=>toDateStr(today),[today]);
+
+      const [user,     setUser]    = useState(()=>loadData("bb_user", null));
+      const [authStep, setAuthStep]= useState(1);
+      const [authForm, setAuthForm]= useState({ phone:"", name:"" });
+      const [authErr,  setAuthErr] = useState("");
+      const [customers,setCustomers]=useState(()=>loadData("bb_customers",[{phone:"0501234567",name:"ישראל ישראלי"}]));
+
+      const [screen,  setScreen]  = useState("home");
+      const [appts,   setAppts]   = useState(()=>loadData("bb_appts",[]));
+      const [booking, setBooking] = useState({service:null,barber:null,date:"",time:""});
+      const [editId,  setEditId]  = useState(null);
+      const [step,    setStep]    = useState(1);
+      const [weekBase,setWeekBase]= useState(today);
+      const [toast,   setToast]   = useState(null);
+
+      const ADMIN_PASS = "bb2024";
+      const [adminOpen,setAdminOpen] = useState(false);
+      const [adminPass,setAdminPass] = useState("");
+      const [adminAuth,setAdminAuth] = useState(false);
+      const [adminErr, setAdminErr]  = useState("");
+
+      const weekDays   = useMemo(()=>getWeekDays(weekBase),[weekBase]);
+      const monthLabel = HE_MONTHS[weekDays[0].getMonth()];
+
+      function showToast(msg){ setToast(msg); setTimeout(()=>setToast(null),2800); }
+
+      function updateAppts(newVal){ setAppts(newVal); saveData("bb_appts", newVal); }
+      function updateCustomers(newVal){ setCustomers(newVal); saveData("bb_customers", newVal); }
+
+      function handlePhoneSubmit(){
+        if(authForm.phone.length<9){ setAuthErr("הכנס מספר טלפון תקין"); return; }
+        const found = customers.find(c=>c.phone===authForm.phone);
+        if(found){ setUser(found); saveData("bb_user",found); setAuthErr(""); }
+        else { setAuthStep(2); setAuthErr(""); }
+      }
+      function handleRegister(){
+        if(!authForm.name){ setAuthErr("יש למלא שם"); return; }
+        const newC = { phone:authForm.phone, name:authForm.name };
+        const updated = [...customers, newC];
+        updateCustomers(updated);
+        setUser(newC); saveData("bb_user",newC); setAuthErr("");
+      }
+      function handleLogout(){
+        setUser(null); saveData("bb_user",null);
+        setAuthForm({phone:"",name:""}); setAuthStep(1); setScreen("home");
+      }
+
+      function pickService(id){ setBooking(b=>({...b,service:id})); setTimeout(()=>setStep(2),180); }
+      function pickBarber(id){  setBooking(b=>({...b,barber:id}));  setTimeout(()=>setStep(3),180); }
+      function pickSlot(ds,time){ setBooking(b=>({...b,date:ds,time})); setTimeout(()=>setStep(4),180); }
+
+      function confirmBooking(){
+        const newAppt = {
+          id: Date.now(),
+          service: SERVICES.find(s=>s.id===booking.service)?.name,
+          barber:  BARBERS.find(b=>b.id===booking.barber)?.name,
+          date: booking.date, time: booking.time,
+          customerName: user.name,
+          customerPhone: user.phone,
+          bookedAt: new Date().toLocaleString("he-IL"),
+        };
+        if(editId){
+          const updated = appts.map(a=>a.id===editId?{...a,date:booking.date,time:booking.time}:a);
+          updateAppts(updated); showToast("התור עודכן! ✏️"); setEditId(null);
+        } else {
+          updateAppts([...appts, newAppt]); showToast("התור נקבע! 🎉");
+        }
+        setBooking({service:null,barber:null,date:"",time:""}); setStep(1); setScreen("myAppts");
+      }
+
+      function startReschedule(appt){
+        setEditId(appt.id);
+        setBooking({
+          service:SERVICES.find(s=>s.name===appt.service)?.id||null,
+          barber:BARBERS.find(b=>b.name===appt.barber)?.id||null,
+          date:appt.date, time:"",
+        });
+        setWeekBase(new Date(appt.date)); setStep(3); setScreen("book");
+      }
+
+      const selSvc    = SERVICES.find(s=>s.id===booking.service);
+      const selBarber = BARBERS.find(b=>b.id===booking.barber);
+
+      const css = `
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        ::-webkit-scrollbar{width:0}
+        body{background:#eef2ff}
+        .app{min-height:100vh;min-height:100dvh;background:#eef2ff;font-family:'Heebo',sans-serif;direction:rtl;color:#0d1b4b;display:flex;flex-direction:column;max-width:430px;margin:0 auto}
+        .topbar{background:linear-gradient(135deg,#1a3a8f,#1e4fc2);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30;box-shadow:0 2px 14px rgba(26,58,143,.28)}
+        .logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#f5c842,#f0a500);display:flex;align-items:center;justify-content:center;font-size:20px}
+        .auth-bg{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:linear-gradient(160deg,#1a3a8f 0%,#1e4fc2 50%,#2d6ae0 100%)}
+        .auth-card{background:#fff;border-radius:24px;padding:28px 22px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+        .inp{width:100%;border:2px solid #dde6ff;border-radius:12px;padding:13px 14px;font-family:'Heebo',sans-serif;font-size:16px;color:#0d1b4b;outline:none;transition:border-color .2s;margin-bottom:12px;direction:rtl;background:#fff}
+        .inp:focus{border-color:#1e4fc2}
+        .auth-err{background:#fff0f0;color:#e53e3e;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:14px;text-align:center}
+        .btn-y{background:linear-gradient(135deg,#f5c842,#f0a500);color:#0d1b4b;border:none;border-radius:14px;padding:14px;font-family:'Heebo',sans-serif;font-size:15px;font-weight:800;cursor:pointer;width:100%;box-shadow:0 4px 14px rgba(245,200,66,.35);transition:transform .15s;-webkit-tap-highlight-color:transparent}
+        .btn-y:active{transform:scale(.97)}
+        .btn-y:disabled{opacity:.4}
+        .btn-b{background:#1e4fc2;color:#fff;border:none;border-radius:14px;padding:14px;font-family:'Heebo',sans-serif;font-size:14px;font-weight:700;cursor:pointer;width:100%;-webkit-tap-highlight-color:transparent}
+        .btn-o{background:transparent;color:#1e4fc2;border:2px solid #1e4fc2;border-radius:14px;padding:12px;font-family:'Heebo',sans-serif;font-size:14px;font-weight:700;cursor:pointer;width:100%;-webkit-tap-highlight-color:transparent}
+        .btn-red{background:transparent;color:#e53e3e;border:2px solid #e53e3e;border-radius:14px;padding:12px;font-family:'Heebo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;width:100%}
+        .card{background:#fff;border:2px solid #dde6ff;border-radius:16px;padding:16px;margin-bottom:10px;cursor:pointer;transition:border-color .2s;box-shadow:0 2px 8px rgba(26,58,143,.06);-webkit-tap-highlight-color:transparent}
+        .card.sel{border-color:#1e4fc2;background:#eef3ff}
+        .step-bar{display:flex;gap:6px;margin-bottom:20px}
+        .step-seg{flex:1;height:5px;border-radius:3px;background:#dde6ff;transition:background .3s}
+        .step-seg.on{background:linear-gradient(90deg,#1e4fc2,#f5c842)}
+        .cal-wrap{background:#fff;border-radius:16px;border:2px solid #dde6ff;overflow:hidden;margin-bottom:12px}
+        .cal-table{width:100%;border-collapse:collapse}
+        .cal-th{background:#f0f4ff;padding:8px 2px;text-align:center;font-size:11px;font-weight:700;color:#5a72b0}
+        .cal-th-time{text-align:right;padding-right:8px;color:#1e4fc2;font-weight:800;background:#f0f4ff;font-size:11px}
+        .day-num{font-size:13px;font-weight:900;display:block;color:#0d1b4b}
+        .day-num.tdy{background:#f5c842;color:#0d1b4b;border-radius:7px;padding:1px 4px}
+        .day-num.pst{color:#c5cfe8}
+        .time-lbl{font-size:11px;font-weight:800;color:#1e4fc2;white-space:nowrap;padding:2px 8px 2px 2px;text-align:right}
+        .slot{height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;cursor:pointer;border:1.5px solid transparent;transition:background .15s;margin:2px;-webkit-tap-highlight-color:transparent}
+        .slot-free{background:#e8f0fe;color:#1e4fc2;border-color:#c5d4f8}
+        .slot-busy{background:#f5f6fa;color:#c0cade;cursor:default}
+        .slot-sel{background:linear-gradient(135deg,#1e4fc2,#2d6ae0)!important;color:#fff!important;border-color:#1a3a8f!important}
+        .slot-past{background:#f8f9fc;color:#d8deeb;cursor:default}
+        .gallery-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+        .gal-item{border-radius:12px;overflow:hidden;aspect-ratio:1;position:relative}
+        .gal-item img{width:100%;height:100%;object-fit:cover;object-position:top}
+        .gal-label{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(13,27,75,.8));color:#fff;font-size:10px;font-weight:700;padding:14px 6px 5px;text-align:center}
+        .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#fff;border-top:2px solid #dde6ff;display:flex;justify-content:space-around;padding:8px 0 14px;z-index:25;box-shadow:0 -2px 12px rgba(26,58,143,.08)}
+        .nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 10px;background:none;border:none;font-family:'Heebo',sans-serif;font-size:10px;font-weight:600;color:#9aacce;cursor:pointer;position:relative;-webkit-tap-highlight-color:transparent}
+        .nav-btn.on{color:#1e4fc2}
+        .nav-ico{width:40px;height:32px;display:flex;align-items:center;justify-content:center;font-size:20px}
+        .nav-btn.on .nav-ico{background:#eef3ff;border-radius:12px}
+        .nav-badge{position:absolute;top:2px;right:6px;background:#f5c842;color:#0d1b4b;border-radius:50%;width:17px;height:17px;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center}
+        .toast{position:fixed;bottom:85px;left:50%;transform:translateX(-50%);background:#1e4fc2;color:#fff;border-radius:14px;padding:13px 22px;font-size:14px;font-weight:700;z-index:999;white-space:nowrap;box-shadow:0 4px 20px rgba(30,79,194,.4);animation:su .3s ease}
+        @keyframes su{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+        @keyframes fs{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+        .ani{animation:fs .3s ease forwards}
+        .slbl{font-size:11px;font-weight:700;color:#5a72b0;margin-bottom:9px;text-transform:uppercase;letter-spacing:.5px}
+        .crow{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1.5px solid #eef0f8}
+        .crow:last-child{border-bottom:none}
+        .divider{height:1.5px;background:#eef0f8;margin:14px 0}
+        .open-badge{background:#f5c842;color:#0d1b4b;border-radius:20px;padding:5px 14px;font-size:12px;font-weight:800;cursor:pointer}
+      `;
+
+      if(!user) return (
+        <div className="app">
+          <style>{css}</style>
+          <div className="auth-bg">
+            <div style={{textAlign:"center",marginBottom:28}}>
+              <div style={{width:80,height:80,borderRadius:22,background:"linear-gradient(135deg,#f5c842,#f0a500)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:40,margin:"0 auto 12px",boxShadow:"0 8px 24px rgba(245,200,66,.4)"}}>💈</div>
+              <div style={{fontSize:26,fontWeight:900,color:"#fff",letterSpacing:.5}}>B.B HairStyle</div>
+              <div style={{fontSize:13,color:"rgba(255,255,255,.65)",marginTop:4}}>ספר בית מקצועי</div>
+            </div>
+            <div className="auth-card">
+              {authStep===1 ? (
+                <>
+                  <div style={{fontSize:18,fontWeight:900,marginBottom:6}}>ברוך הבא! 👋</div>
+                  <div style={{fontSize:13,color:"#5a72b0",marginBottom:18}}>הכנס מספר טלפון לכניסה או הרשמה</div>
+                  <input className="inp" placeholder="מספר טלפון (050...)" type="tel" maxLength={10}
+                    value={authForm.phone} onChange={e=>setAuthForm(f=>({...f,phone:e.target.value}))}
+                    onKeyDown={e=>e.key==="Enter"&&handlePhoneSubmit()}/>
+                  {authErr && <div className="auth-err">{authErr}</div>}
+                  <button className="btn-y" onClick={handlePhoneSubmit}>המשך ←</button>
+                </>
+              ) : (
+                <>
+                  <button onClick={()=>{setAuthStep(1);setAuthErr("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#1e4fc2",fontFamily:"'Heebo',sans-serif",fontSize:13,fontWeight:700,marginBottom:14,padding:0}}>→ חזרה</button>
+                  <div style={{fontSize:18,fontWeight:900,marginBottom:4}}>פרטים אישיים 📋</div>
+                  <div style={{fontSize:13,color:"#5a72b0",marginBottom:18}}>מספר <strong>{authForm.phone}</strong> — נא למלא שם</div>
+                  <label style={{fontSize:12,fontWeight:700,color:"#5a72b0",display:"block",marginBottom:4}}>שם מלא *</label>
+                  <input className="inp" placeholder="ישראל ישראלי" type="text"
+                    value={authForm.name} onChange={e=>setAuthForm(f=>({...f,name:e.target.value}))}
+                    onKeyDown={e=>e.key==="Enter"&&handleRegister()}/>
+                  {authErr && <div className="auth-err">{authErr}</div>}
+                  <button className="btn-y" onClick={handleRegister}>סיום הרשמה ✓</button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+
+      return (
+        <div className="app">
+          <style>{css}</style>
+          <div className="topbar">
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div className="logo">💈</div>
+              <div>
+                <div style={{fontSize:15,fontWeight:800,color:"#fff"}}>B.B HairStyle</div>
+                <div style={{fontSize:11,color:"rgba(255,255,255,.65)"}}>שלום, {user.name.split(" ")[0]} 👋</div>
+              </div>
+            </div>
+            <div className="open-badge" onClick={handleLogout}>יציאה ↩</div>
+          </div>
+
+          <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",paddingBottom:80}}>
+
+            {screen==="home" && (
+              <div className="ani" style={{padding:"16px 16px 20px"}}>
+                <div style={{background:"linear-gradient(135deg,#1a3a8f,#1e4fc2 60%,#2d6ae0)",borderRadius:22,padding:"24px 22px",marginBottom:18,position:"relative",overflow:"hidden",boxShadow:"0 6px 24px rgba(26,58,143,.28)"}}>
+                  <div style={{position:"absolute",top:-30,left:-30,width:130,height:130,background:"rgba(245,200,66,.15)",borderRadius:"50%"}}/>
+                  <div style={{fontSize:12,color:"rgba(255,255,255,.7)",marginBottom:4}}>ברוך הבא 👋</div>
+                  <div style={{fontSize:22,fontWeight:900,color:"#fff",lineHeight:1.3,marginBottom:16}}>קבע תור<br/>בשניות ✂️</div>
+                  <button className="btn-y" onClick={()=>{setScreen("book");setStep(1);setEditId(null);}}>+ קביעת תור חדש</button>
+                </div>
+                <div className="slbl">פעולות מהירות</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
+                  {[
+                    {icon:"📋",label:"התורים שלי",action:()=>setScreen("myAppts"),badge:appts.length},
+                    {icon:"✏️",label:"שינוי תור",  action:()=>setScreen("myAppts")},
+                    {icon:"💬",label:"WhatsApp",   action:()=>window.open("https://wa.me/972501234567")},
+                    {icon:"📍",label:"ניווט לעסק", action:()=>window.open("https://waze.com")},
+                  ].map((item,i)=>(
+                    <div key={i} className="card" style={{textAlign:"center",padding:"18px 10px"}} onClick={item.action}>
+                      <div style={{position:"relative",display:"inline-block"}}>
+                        <div style={{fontSize:28,marginBottom:6}}>{item.icon}</div>
+                        {item.badge>0&&<span className="nav-badge" style={{position:"absolute",top:-6,right:-10}}>{item.badge}</span>}
+                      </div>
+                      <div style={{fontSize:13,fontWeight:700,color:"#1e4fc2"}}>{item.label}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="slbl">סגנונות תספורת</div>
+                <div className="gallery-grid">
+                  {GALLERY.map(g=>(
+                    <div key={g.id} className="gal-item">
+                      <img src={g.img} alt={g.label} onError={e=>{e.target.parentNode.style.background="#dde6ff";e.target.style.display="none";}}/>
+                      <div className="gal-label">{g.label}</div>
+                    </div>
+                  ))}
+                </div>
+                {appts.length>0&&(
+                  <>
+                    <div className="slbl">התור הקרוב שלך</div>
+                    <div style={{background:"#fff",border:"2px solid #f5c842",borderRadius:18,padding:"16px 18px",boxShadow:"0 4px 16px rgba(245,200,66,.18)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <div>
+                        <div style={{fontSize:16,fontWeight:800}}>{appts[appts.length-1].service}</div>
+                        <div style={{fontSize:12,color:"#5a72b0",marginTop:4}}>{fmtDate(appts[appts.length-1].date)} • {appts[appts.length-1].time}</div>
+                        <div style={{fontSize:12,color:"#1e4fc2",fontWeight:700,marginTop:3}}>✂️ {appts[appts.length-1].barber}</div>
+                      </div>
+                      <div style={{background:"#f5c842",color:"#0d1b4b",borderRadius:12,padding:"8px 14px",fontSize:12,fontWeight:800}}>מאושר ✓</div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {screen==="book" && (
+              <div className="ani" style={{padding:"16px 16px 20px"}}>
+                {editId&&(
+                  <div style={{background:"#fff8e1",border:"2px solid #f5c842",borderRadius:14,padding:"11px 14px",marginBottom:14,fontSize:13,fontWeight:700,color:"#7a5500",display:"flex",alignItems:"center",gap:8}}>
+                    ✏️ שינוי תור
+                    <button onClick={()=>{setEditId(null);setBooking({service:null,barber:null,date:"",time:""});setStep(1);}} style={{marginRight:"auto",background:"none",border:"none",cursor:"pointer",fontSize:16,color:"#7a5500"}}>✕</button>
+                  </div>
+                )}
+                <div className="step-bar">
+                  {[1,2,3,4].map((s,i)=><div key={i} className={`step-seg ${step>=(i+1)?"on":""}`}/>)}
+                </div>
+
+                {step===1&&(
+                  <>
+                    <div style={{fontSize:20,fontWeight:900,marginBottom:4}}>סוג תור</div>
+                    <div style={{fontSize:13,color:"#5a72b0",marginBottom:14}}>לחץ על השירות הרצוי</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 68px",padding:"9px 14px",background:"#1e4fc2",borderRadius:"14px 14px 0 0",fontSize:12,fontWeight:700,color:"#fff"}}>
+                      <div>תיאור</div><div style={{textAlign:"center"}}>תמונה</div>
+                    </div>
+                    <div style={{border:"2px solid #dde6ff",borderTop:"none",borderRadius:"0 0 14px 14px",overflow:"hidden"}}>
+                      {SERVICES.map((s,i)=>{
+                        const sel=booking.service===s.id;
+                        return (
+                          <div key={s.id} onClick={()=>pickService(s.id)}
+                            style={{display:"grid",gridTemplateColumns:"1fr 68px",alignItems:"center",padding:"11px 14px",gap:10,
+                              background:sel?"#eef3ff":i%2===0?"#fff":"#f7f9ff",
+                              borderTop:i>0?"1px solid #eef0f8":"none",
+                              borderRight:sel?"4px solid #1e4fc2":"4px solid transparent",cursor:"pointer"}}>
+                            <div>
+                              <div style={{fontWeight:800,fontSize:15,color:sel?"#1e4fc2":"#0d1b4b"}}>{s.name}</div>
+                              <div style={{fontSize:11,color:"#9aacce",marginTop:2}}>{s.sub}</div>
+                              <div style={{display:"flex",gap:10,marginTop:5}}>
+                                <span style={{fontSize:12,color:"#5a72b0",fontWeight:600}}>{s.duration} דקות</span>
+                                <span style={{fontWeight:900,fontSize:15,color:sel?"#1e4fc2":"#0d1b4b"}}>₪{s.price}</span>
+                              </div>
+                            </div>
+                            <div style={{width:60,height:60,borderRadius:14,overflow:"hidden",border:sel?"2.5px solid #1e4fc2":"2px solid #dde6ff",background:"#eef2ff",position:"relative"}}>
+                              <img src={s.img} alt={s.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"top"}}
+                                onError={e=>{e.target.style.display="none";e.target.nextSibling.style.display="flex";}}/>
+                              <div style={{display:"none",width:"100%",height:"100%",position:"absolute",top:0,left:0,background:"linear-gradient(135deg,#dde6ff,#c5d4f8)",alignItems:"center",justifyContent:"center",fontSize:22}}>✂️</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+
+                {step===2&&(
+                  <>
+                    <div style={{fontSize:20,fontWeight:900,marginBottom:4}}>בחר ספר</div>
+                    <div style={{fontSize:13,color:"#5a72b0",marginBottom:16}}>לחץ על הספר הרצוי</div>
+                    {BARBERS.map(b=>{
+                      const sel=booking.barber===b.id;
+                      return (
+                        <div key={b.id} className={`card ${sel?"sel":""}`} onClick={()=>pickBarber(b.id)} style={{display:"flex",alignItems:"center",gap:14}}>
+                          <div style={{width:50,height:50,borderRadius:14,background:sel?"#dde6ff":"#f0f3fa",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>{b.emoji}</div>
+                          <div style={{fontWeight:700,fontSize:16}}>{b.name}</div>
+                          {sel&&<div style={{marginRight:"auto",color:"#1e4fc2",fontWeight:900,fontSize:18}}>✓</div>}
+                        </div>
+                      );
+                    })}
+                    <button className="btn-o" style={{marginTop:6}} onClick={()=>setStep(1)}>→ חזרה</button>
+                  </>
+                )}
+
+                {step===3&&(()=>{
+                  return (
+                    <>
+                      <div style={{fontSize:20,fontWeight:900,marginBottom:6}}>בחר/י שעה</div>
+                      {selSvc&&<div style={{fontSize:13,background:"#eef3ff",borderRadius:12,padding:"9px 14px",marginBottom:12}}><strong>{selSvc.name}</strong> • {selSvc.duration} דקות{selBarber&&<> • <strong>{selBarber.name}</strong></>}</div>}
+                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
+                        <button onClick={()=>{const d=new Date(weekBase);d.setDate(d.getDate()-7);setWeekBase(d);}} style={{width:32,height:32,borderRadius:9,background:"#1e4fc2",color:"#fff",border:"none",fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>›</button>
+                        <button onClick={()=>{const d=new Date(weekBase);d.setDate(d.getDate()+7);setWeekBase(d);}} style={{width:32,height:32,borderRadius:9,background:"#1e4fc2",color:"#fff",border:"none",fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>‹</button>
+                        <div style={{flex:1,background:"#fff",border:"2px solid #dde6ff",borderRadius:9,padding:"6px 10px",fontSize:12,fontWeight:700,color:"#1e4fc2",textAlign:"center"}}>{monthLabel}</div>
+                        <button onClick={()=>setWeekBase(today)} style={{background:"#f5c842",color:"#0d1b4b",border:"none",borderRadius:9,padding:"6px 10px",fontFamily:"'Heebo',sans-serif",fontSize:11,fontWeight:800,cursor:"pointer"}}>📅 היום</button>
+                      </div>
+                      <div className="cal-wrap">
+                        <table className="cal-table">
+                          <thead>
+                            <tr>
+                              <th className="cal-th-time">{monthLabel}</th>
+                              {weekDays.map((d,i)=>{
+                                const ds=toDateStr(d),isToday=ds===todayStr;
+                                const dayStart=new Date(d);dayStart.setHours(0,0,0,0);
+                                const todayStart=new Date(today);todayStart.setHours(0,0,0,0);
+                                const isPast=dayStart<todayStart;
+                                return (
+                                  <th key={i} className="cal-th">
+                                    <span style={{fontSize:9,color:"#9aacce",display:"block"}}>{HE_DAYS[i]}</span>
+                                    <span className={`day-num ${isToday?"tdy":""} ${isPast?"pst":""}`}>{d.getDate()}</span>
+                                  </th>
+                                );
+                              })}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {ALL_SLOTS.map(time=>(
+                              <tr key={time}>
+                                <td className="time-lbl">{time}</td>
+                                {weekDays.map((d,ci)=>{
+                                  const ds=toDateStr(d);
+                                  const dayStart=new Date(d);dayStart.setHours(0,0,0,0);
+                                  const todayStart=new Date(today);todayStart.setHours(0,0,0,0);
+                                  const isPast=dayStart<todayStart;
+                                  const isBooked=(BOOKED_MAP[ds]||[]).includes(time);
+                                  const isSel=booking.date===ds&&booking.time===time;
+                                  let cls="slot ";
+                                  if(isSel) cls+="slot-sel";
+                                  else if(isPast) cls+="slot-past";
+                                  else if(isBooked) cls+="slot-busy";
+                                  else cls+="slot-free";
+                                  return (
+                                    <td key={ci}><div className={cls} onClick={()=>{if(!isPast&&!isBooked)pickSlot(ds,time);}}>
+                                      {isSel?"✓":isBooked?"תפוס":isPast?"":"פנוי"}
+                                    </div></td>
+                                  );
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <button className="btn-o" onClick={()=>editId?setScreen("myAppts"):setStep(2)}>→ חזרה</button>
+                    </>
+                  );
+                })()}
+
+                {step===4&&(
+                  <>
+                    <div style={{fontSize:20,fontWeight:900,marginBottom:4}}>{editId?"אישור שינוי תור":"אישור הזמנה"}</div>
+                    <div style={{fontSize:13,color:"#5a72b0",marginBottom:16}}>בדוק את הפרטים ואשר</div>
+                    <div style={{background:"#fff",border:"2px solid #dde6ff",borderRadius:18,padding:"18px 20px",marginBottom:16}}>
+                      {(editId
+                        ?[{label:"שירות",value:appts.find(a=>a.id===editId)?.service},{label:"ספר",value:appts.find(a=>a.id===editId)?.barber},{label:"תאריך חדש",value:fmtDate(booking.date)},{label:"שעה חדשה",value:booking.time}]
+                        :[{label:"שירות",value:selSvc?.name},{label:"מחיר",value:`₪${selSvc?.price}`},{label:"משך",value:`${selSvc?.duration} דקות`},{label:"ספר",value:selBarber?.name},{label:"תאריך",value:fmtDate(booking.date)},{label:"שעה",value:booking.time}]
+                      ).map((row,i)=>(
+                        <div key={i} className="crow"><span style={{color:"#9aacce",fontSize:14}}>{row.label}</span><span style={{fontWeight:800,fontSize:14}}>{row.value}</span></div>
+                      ))}
+                    </div>
+                    <button className="btn-y" onClick={confirmBooking} style={{marginBottom:10}}>{editId?"✏️ אשר שינוי":"✓ אשר קביעת תור"}</button>
+                    <button className="btn-o" onClick={()=>setStep(3)}>→ חזרה</button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {screen==="myAppts"&&(
+              <div className="ani" style={{padding:"16px 16px 20px"}}>
+                <div style={{fontSize:20,fontWeight:900,marginBottom:4}}>התורים שלי</div>
+                <div style={{fontSize:13,color:"#5a72b0",marginBottom:16}}>{appts.length} תורים קרובים</div>
+                {appts.length===0?(
+                  <div style={{textAlign:"center",padding:"40px 0"}}>
+                    <div style={{fontSize:44,marginBottom:12}}>📅</div>
+                    <div style={{fontSize:16,fontWeight:700}}>אין תורים קרובים</div>
+                    <div style={{fontSize:13,color:"#9aacce",marginTop:6,marginBottom:22}}>קבע תור עכשיו!</div>
+                    <button className="btn-y" style={{maxWidth:200,margin:"0 auto"}} onClick={()=>{setScreen("book");setStep(1);setEditId(null);}}>+ קביעת תור</button>
+                  </div>
+                ):[...appts].reverse().map(appt=>(
+                  <div key={appt.id} style={{background:"#fff",border:"2px solid #dde6ff",borderRadius:18,padding:"16px 18px",marginBottom:12,boxShadow:"0 2px 10px rgba(26,58,143,.07)"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
+                      <div>
+                        <div style={{fontSize:16,fontWeight:800}}>{appt.service}</div>
+                        <div style={{fontSize:12,color:"#1e4fc2",fontWeight:700,marginTop:3}}>✂️ {appt.barber}</div>
+                      </div>
+                      <div style={{background:"#f5c842",color:"#0d1b4b",borderRadius:10,padding:"5px 12px",fontSize:11,fontWeight:800}}>מאושר ✓</div>
+                    </div>
+                    <div style={{display:"flex",gap:14,padding:"10px 0",borderTop:"1.5px solid #eef0f8",borderBottom:"1.5px solid #eef0f8",fontSize:13,color:"#5a72b0",fontWeight:600}}>
+                      <span>📅 {fmtDate(appt.date)}</span><span>🕐 {appt.time}</span>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",paddingTop:12}}>
+                      <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,cursor:"pointer",padding:"6px 0",borderLeft:"1.5px solid #eef0f8"}} onClick={()=>startReschedule(appt)}>
+                        <span style={{fontSize:26}}>↕️</span><span style={{fontSize:13,fontWeight:700,color:"#1e4fc2"}}>שינוי תור</span>
+                      </div>
+                      <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,cursor:"pointer",padding:"6px 0"}} onClick={()=>{updateAppts(appts.filter(a=>a.id!==appt.id));showToast("התור בוטל");}}>
+                        <span style={{fontSize:26}}>✖️</span><span style={{fontSize:13,fontWeight:700,color:"#e53e3e"}}>ביטול תור</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {screen==="contact"&&(
+              <div className="ani" style={{padding:"16px 16px 20px"}}>
+                <div style={{fontSize:20,fontWeight:900,marginBottom:4}}>יצירת קשר</div>
+                <div style={{fontSize:13,color:"#5a72b0",marginBottom:18}}>אנחנו כאן בשבילך</div>
+                {[
+                  {icon:"💬",label:"WhatsApp",   sub:"זמין 9:00–20:00",        color:"#25d366",action:()=>window.open("https://wa.me/972501234567")},
+                  {icon:"📞",label:"טלפון",       sub:"050-123-4567",            color:"#1e4fc2",action:()=>window.open("tel:0501234567")},
+                  {icon:"📍",label:"כתובת",       sub:"רחוב הרצל 12, תל אביב", color:"#f5c842",action:()=>{}},
+                  {icon:"🕐",label:"שעות פעילות",sub:"ראשון–שישי: 9:00–20:00",color:"#1e4fc2",action:()=>{}},
+                ].map((item,i)=>(
+                  <div key={i} className="card" style={{display:"flex",alignItems:"center",gap:14}} onClick={item.action}>
+                    <div style={{width:48,height:48,borderRadius:14,background:`${item.color}22`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{item.icon}</div>
+                    <div><div style={{fontWeight:800,fontSize:15}}>{item.label}</div><div style={{fontSize:12,color:"#9aacce",marginTop:2}}>{item.sub}</div></div>
+                  </div>
+                ))}
+                <div className="divider"/>
+                <div style={{background:"#fff",border:"2px solid #dde6ff",borderRadius:16,padding:"16px 18px"}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#5a72b0",marginBottom:10}}>הפרטים שלי</div>
+                  {[{label:"שם",value:user.name},{label:"טלפון",value:user.phone}].map((r,i)=>(
+                    <div key={i} className="crow"><span style={{color:"#9aacce",fontSize:13}}>{r.label}</span><span style={{fontWeight:700,fontSize:13}}>{r.value}</span></div>
+                  ))}
+                  <div style={{marginTop:14}}><button className="btn-red" onClick={handleLogout}>יציאה מהחשבון ↩</button></div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="bottom-nav">
+            {[
+              {icon:"🏠",label:"ראשי",      s:"home"},
+              {icon:"📋",label:"התורים שלי",s:"myAppts",badge:appts.length},
+              {icon:"✂️",label:"קבע תור",  s:"book"},
+              {icon:"📞",label:"צור קשר",  s:"contact"},
+            ].map(item=>(
+              <button key={item.s} className={`nav-btn ${screen===item.s?"on":""}`}
+                onClick={()=>{setScreen(item.s);if(item.s==="book"){setStep(1);setEditId(null);}}}>
+                <div className="nav-ico">{item.icon}</div>
+                {item.badge>0&&<span className="nav-badge">{item.badge}</span>}
+                {item.label}
+              </button>
+            ))}
+          </div>
+
+          {toast&&<div className="toast">{toast}</div>}
+
+          {/* ADMIN PANEL */}
+          {adminOpen&&(
+            <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:100,display:"flex",alignItems:"flex-end"}}
+              onClick={e=>{if(e.target===e.currentTarget){setAdminOpen(false);setAdminAuth(false);setAdminPass("");setAdminErr("");}}}>
+              <div style={{background:"#fff",borderRadius:"24px 24px 0 0",padding:"24px 20px",width:"100%",maxWidth:430,margin:"0 auto",maxHeight:"85vh",overflowY:"auto",direction:"rtl"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+                  <div style={{fontSize:18,fontWeight:900,color:"#0d1b4b"}}>🔐 פאנל ניהול</div>
+                  <button onClick={()=>{setAdminOpen(false);setAdminAuth(false);setAdminPass("");setAdminErr("");}} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#9aacce"}}>✕</button>
+                </div>
+                {!adminAuth ? (
+                  <>
+                    <div style={{fontSize:13,color:"#5a72b0",marginBottom:16}}>הכנס סיסמת מנהל</div>
+                    <input style={{width:"100%",border:"2px solid #dde6ff",borderRadius:12,padding:"13px 14px",fontFamily:"'Heebo',sans-serif",fontSize:15,color:"#0d1b4b",outline:"none",marginBottom:12,direction:"ltr",textAlign:"center",letterSpacing:4}}
+                      type="password" placeholder="••••••" value={adminPass} onChange={e=>setAdminPass(e.target.value)}
+                      onKeyDown={e=>{if(e.key==="Enter"){if(adminPass===ADMIN_PASS){setAdminAuth(true);setAdminErr("");}else setAdminErr("סיסמה שגויה");}}}/>
+                    {adminErr&&<div style={{background:"#fff0f0",color:"#e53e3e",borderRadius:10,padding:"10px",fontSize:13,fontWeight:600,marginBottom:12,textAlign:"center"}}>{adminErr}</div>}
+                    <button style={{background:"linear-gradient(135deg,#f5c842,#f0a500)",color:"#0d1b4b",border:"none",borderRadius:14,padding:"14px",fontFamily:"'Heebo',sans-serif",fontSize:15,fontWeight:800,cursor:"pointer",width:"100%"}}
+                      onClick={()=>{if(adminPass===ADMIN_PASS){setAdminAuth(true);setAdminErr("");}else setAdminErr("סיסמה שגויה");}}>כניסה →</button>
+                  </>
+                ) : (
+                  <>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
+                      {[{label:'סה"כ תורים',val:appts.length,color:"#1e4fc2"},{label:"לקוחות",val:customers.length,color:"#f0a500"}].map((s,i)=>(
+                        <div key={i} style={{background:"#f0f4ff",borderRadius:14,padding:"14px",textAlign:"center"}}>
+                          <div style={{fontSize:28,fontWeight:900,color:s.color}}>{s.val}</div>
+                          <div style={{fontSize:11,fontWeight:700,color:"#5a72b0",marginTop:2}}>{s.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{fontSize:13,fontWeight:700,color:"#5a72b0",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>כל התורים</div>
+                    {appts.length===0 ? <div style={{textAlign:"center",padding:"20px",color:"#9aacce"}}>אין תורים עדיין</div>
+                    : [...appts].reverse().map(appt=>(
+                      <div key={appt.id} style={{background:"#f7f9ff",border:"2px solid #dde6ff",borderRadius:14,padding:"14px",marginBottom:10}}>
+                        <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                          <div style={{fontWeight:800,fontSize:14}}>{appt.service}</div>
+                          <div style={{background:"#f5c842",color:"#0d1b4b",borderRadius:8,padding:"3px 10px",fontSize:11,fontWeight:800}}>✓</div>
+                        </div>
+                        <div style={{fontSize:13,color:"#1e4fc2",fontWeight:700,marginBottom:4}}>✂️ {appt.barber}</div>
+                        <div style={{fontSize:12,color:"#5a72b0",marginBottom:6}}>📅 {fmtDate(appt.date)} &nbsp; 🕐 {appt.time}</div>
+                        {appt.customerName&&(
+                          <div style={{borderTop:"1.5px solid #eef0f8",paddingTop:8}}>
+                            <div style={{fontSize:13,color:"#0d1b4b",fontWeight:700}}>👤 {appt.customerName}</div>
+                            <div style={{fontSize:12,color:"#5a72b0",marginTop:2}}>📞 {appt.customerPhone}</div>
+                            {appt.bookedAt&&<div style={{fontSize:11,color:"#9aacce",marginTop:2}}>נקבע: {appt.bookedAt}</div>}
+                          </div>
+                        )}
+                        <div style={{display:"flex",gap:8,marginTop:10}}>
+                          <button onClick={()=>{const msg=encodeURIComponent("שלום "+appt.customerName+"! מתזכר/ת שיש לך תור ב"+fmtDate(appt.date)+" בשעה "+appt.time+" 💈 B.B HairStyle");window.open("https://wa.me/"+appt.customerPhone+"?text="+msg,"_blank");}}
+                            style={{flex:1,background:"#25d36622",color:"#1a7a40",border:"2px solid #25d36640",borderRadius:10,padding:"8px",fontFamily:"'Heebo',sans-serif",fontSize:12,fontWeight:700,cursor:"pointer"}}>💬 תזכורת</button>
+                          <button onClick={()=>{updateAppts(appts.filter(a=>a.id!==appt.id));showToast("תור בוטל");}}
+                            style={{flex:1,background:"#fff0f0",color:"#e53e3e",border:"2px solid #fcc",borderRadius:10,padding:"8px",fontFamily:"'Heebo',sans-serif",fontSize:12,fontWeight:700,cursor:"pointer"}}>❌ ביטול</button>
+                        </div>
+                      </div>
+                    ))}
+                    <div style={{fontSize:13,fontWeight:700,color:"#5a72b0",margin:"16px 0 10px",textTransform:"uppercase",letterSpacing:.5}}>לקוחות רשומים</div>
+                    {customers.map((cu,i)=>(
+                      <div key={i} style={{background:"#f7f9ff",border:"2px solid #dde6ff",borderRadius:12,padding:"12px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                        <div>
+                          <div style={{fontWeight:700,fontSize:14}}>👤 {cu.name}</div>
+                          <div style={{fontSize:12,color:"#5a72b0",marginTop:2}}>📞 {cu.phone}</div>
+                        </div>
+                        <button onClick={()=>window.open("https://wa.me/"+cu.phone,"_blank")} style={{background:"#25d36620",color:"#1a7a40",border:"none",borderRadius:10,padding:"8px 12px",fontSize:12,fontWeight:700,cursor:"pointer"}}>💬</button>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          <button onClick={()=>setAdminOpen(true)}
+            style={{position:"fixed",bottom:90,left:16,width:46,height:46,borderRadius:14,background:"linear-gradient(135deg,#1a3a8f,#1e4fc2)",color:"#fff",border:"none",fontSize:20,cursor:"pointer",boxShadow:"0 4px 14px rgba(26,58,143,.4)",zIndex:24,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            🔐
+          </button>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App/>);
+  </script>
+
+  <script>
+    // Register Service Worker
+    if("serviceWorker" in navigator){
+      window.addEventListener("load", ()=>{
+        navigator.serviceWorker.register("./sw.js").then(()=>console.log("SW registered")).catch(()=>{});
+      });
+    }
+
+    // PWA Install prompt
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isInStandaloneMode = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+    let deferredPrompt;
+    window.addEventListener("beforeinstallprompt", e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById("install-banner").style.display = "block";
+    });
+    if (isIos && !isInStandaloneMode) {
+      const banner = document.getElementById("install-banner");
+      banner.innerHTML = `📲 להתקנה באייפון:<br/>לחצו על שיתוף ⬆️ ואז "הוסף למסך הבית"<br/><button class="close-btn" onclick="document.getElementById('install-banner').style.display='none'">סגור</button>`;
+      banner.style.display = "block";
+    }
+    const installBtn = document.getElementById("install-btn");
+    if (installBtn) {
+      installBtn.addEventListener("click", async () => {
+        if(deferredPrompt){
+          deferredPrompt.prompt();
+          await deferredPrompt.userChoice;
+          deferredPrompt = null;
+        }
+        document.getElementById("install-banner").style.display = "none";
+      });
+    }
+    window.addEventListener("appinstalled", ()=>{
+      document.getElementById("install-banner").style.display = "none";
+    });
+  </script>
+</body>
+</html>
